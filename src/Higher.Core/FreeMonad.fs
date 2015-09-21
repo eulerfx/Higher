@@ -21,3 +21,15 @@ type FreeMonad<'F>(fuctorFree : Functor<'F>) =
         | Wrap func -> 
             let func' = fuctorFree.Map (fun m' -> Free.Prj <| self.Bind(Free.Inj m', f)) func
             Free.Inj <| Wrap func'
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module Free =
+  
+  let lift (F:Functor<'F>) (fa:App<'F, 'A>) : Free<'F, 'A> =
+    Free.Wrap (F.Map Free.Return fa)
+
+  let rec fold (F:Functor<'F>) (f:App<'F, 'A> -> 'A) (fr:Free<'F, 'A>) : 'A =
+    match fr with
+    | Return a -> a
+    | Wrap fa -> f (F.Map (fold F f) fa) 
+    

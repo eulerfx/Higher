@@ -9,7 +9,7 @@ type Cofree private () =
     let app = new App<Cofree, 'F>(token, value)
     new App2<Cofree, 'F, 'A>(AppToken<Cofree, 'F>.Token token, app)  
   static member Prj (app2 : App2<Cofree, 'F, 'A>) : Cofree<'F, 'A> =
-    let app = app2.Apply(AppToken<Cofree, 'F>.Token token) :?> App<Cofree, 'A>
+    let app = app2.Apply(AppToken<Cofree, 'F>.Token token) :?> App<Cofree, 'F>
     app.Apply(token) :?> _
 
 type CofreeComonad<'F>(func : Functor<'F>) =
@@ -21,19 +21,21 @@ type CofreeComonad<'F>(func : Functor<'F>) =
     let ffb = func.Map (fun fa -> self.Extend f (Cofree.Inj fa) |> Cofree.Prj) ffa
     Cofree.Cofree(f fa, ffb) |> Cofree.Inj
 
-type Cofree with
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module Cofree =
   
-  static member inline head (Cofree(a,_)) = a
+  let inline head (Cofree(a,_)) = a
 
-  static member inline tail (Cofree(_,tl)) = tl
+  let inline tail (Cofree(_,tl)) = tl
   
-  static member toList (cofree : Cofree<Option, 'A> ) : 'A list =    
+  let rec toList (cofree : Cofree<Option, 'A> ) : 'A list =    
     let (Cofree(a, ffa)) = cofree in
     match Option.Prj ffa with
-    | Some cofree -> a::(Cofree.toList cofree)
+    | Some cofree -> a::(toList cofree)
     | None -> [a]
 
-  static member ana (func : Functor<'F>) (f : 'A -> 'B) (g : 'A -> App<'F, 'A>) (a : 'A) : Cofree<'F, 'B> =
-    Cofree.Cofree(f a, g a |> func.Map (Cofree.ana func f g))
+  let rec ana (func : Functor<'F>) (f : 'A -> 'B) (g : 'A -> App<'F, 'A>) (a : 'A) : Cofree<'F, 'B> =
+    Cofree.Cofree(f a, g a |> func.Map (ana func f g))
+
 
     

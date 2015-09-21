@@ -1,11 +1,22 @@
 ﻿namespace Higher.Core
 open System 
 
+[<AbstractClass>]
+type Semigroup<'T>() =
+    abstract Append : 'T -> 'T -> 'T
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module Semigroup =
+  
+  let ofAppend (f:'T -> 'T -> 'T) : Semigroup<'T> =
+    { new Semigroup<'T>() with override __.Append  a b = f a b }
+  
+
 // Monoid class
 [<AbstractClass>]
 type Monoid<'T>() =
+    inherit Semigroup<'T>()
     abstract Empty : 'T
-    abstract Append : 'T -> 'T -> 'T
     
 type Monoid private () =
   static let token = Monoid()
@@ -47,3 +58,8 @@ type EndoMonoid<'T>() =
     inherit Monoid<'T -> 'T>() with
     override self.Empty = id
     override self.Append f g = f >> g
+
+type IntSumMonoid() =
+    inherit Monoid<int>() with
+    override self.Empty = 0
+    override self.Append f g = f + g
