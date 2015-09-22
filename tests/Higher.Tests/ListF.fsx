@@ -57,6 +57,14 @@ module ListF =
   let collect<'a, 'b> (f:'a -> ListF<'b>) : ListF<'a> -> ListF<'b> =
     cata (function NilF -> empty | ConsF (a,tl) -> append (f a) tl)
 
+  let join<'a> : ListF<ListF<'a>> -> ListF<'a> =
+    cata (function
+      | NilF -> empty
+      | ConsF (a,tl) -> append a tl)    
+
+  let map (f:'a -> 'b) : ListF<'a> -> ListF<'b> =
+    collect (f >> singleton)
+
   let length<'a> : ListF<'a> -> int =
     cata (function NilF -> 0 | ConsF (_,a) -> a + 1)
 
