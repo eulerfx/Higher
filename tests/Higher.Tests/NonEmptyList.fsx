@@ -29,8 +29,7 @@ module NonEmptyList =
         let (Cofree(_,tl)) = Cofree.Prj l
         match Option.Prj tl with
         | Some tl -> Some (Cofree.Inj tl)
-        | None -> Some l2
-      )
+        | None -> Some l2)
       l1
 
   let rec foldMap (M:Semigroup<'M>) (f:'a -> 'M) (l:NonEmptyList<'a>) : 'M =
