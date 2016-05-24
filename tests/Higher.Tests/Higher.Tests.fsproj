@@ -45,6 +45,7 @@
     <None Include="ListF.fsx" />
     <None Include="NonEmptyList.fsx" />
     <None Include="Lens.fsx" />
+    <None Include="Yoneda.fsx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Higher.Core\Higher.Core.fsproj">
