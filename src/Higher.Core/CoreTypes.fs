@@ -16,10 +16,10 @@ type App<'F, 'T> (token : 'F, value : obj) =
         if Object.ReferenceEquals(token, token') then  
             value 
         else raise <| new InvalidOperationException("Invalid token")
+
 type App2<'F, 'T1, 'T2> = App<App<'F, 'T1>, 'T2>
 type App3<'F, 'T1, 'T2, 'T3> = App<App2<'F, 'T1, 'T2>, 'T3>
 type App4<'F, 'T1, 'T2, 'T3, 'T4> = App<App3<'F, 'T1, 'T2, 'T3>, 'T4>
-
 
 // A Singleton-like type for managing parameterized tokens 
 type AppToken<'App, 'R>() = 
@@ -32,6 +32,26 @@ type AppToken<'App, 'R>() =
             )
         !appTokenRef
 
+
+/// Composition of 'F and 'G.
+type Compose<'F, 'G> = App2<Compose, 'F, 'G>
+
+////// Composition of 'F and 'G applied to 'A.
+and Compose<'F, 'G, 'A> = App<Compose<'F, 'G>, 'A>
+
+and Compose private () =
+  static let token = new Compose ()
+  static member Inj (value:App<'F, App<'G, 'A>>) : Compose<'F, 'G, 'A> =
+    let app = App<_, _>(token, value)
+    let app2 = App2<_, _, _>(AppToken<Compose, 'F>.Token token, app)
+    let token2 : App<Compose, 'F> = AppToken<Compose, 'F>.Token token
+    App3<_, _, _, _>(AppToken<App<Compose, 'F>, 'G>.Token token2, app2)  
+  static member Prj (app3:Compose<'F, 'G, 'A>) : App<'F, App<'G, 'A>> =
+    let t = AppToken<Compose, 'F>.Token token
+    let t1 : App2<Compose, 'F, 'G> = AppToken<_, _>.Token t
+    let app2 : App2<Compose, 'F, 'G> = app3.Apply t1 :?> _
+    let app : App<Compose, 'F> = app2.Apply t :?> _
+    app.Apply token :?> _
 
 
 

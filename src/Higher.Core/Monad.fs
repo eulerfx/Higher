@@ -16,6 +16,13 @@ type Monad<'M>() =
     abstract Bind<'T, 'R> : App<'M, 'T> *  ('T -> App<'M, 'R>) -> App<'M, 'R>
     member self.ReturnFrom m = m
     
+type IdentityMonad() =
+  inherit Monad<Identity>() with
+    override self.Return (a : 'A) : App<Identity, 'A> =
+      Id a |> Identity.Inj
+    override self.Bind (ma : App<Identity, 'A>, f : 'A -> App<Identity, 'B>) : App<Identity, 'B> =
+      ma |> Identity.Prj |> Identity.un |> f
+
 
 // Generic Monad functions 
 module Monad = 

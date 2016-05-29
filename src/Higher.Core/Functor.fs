@@ -27,6 +27,18 @@ type ProFunctor<'F>() =
         self.DiMap id f fab
 
 
+module Functor =
+  
+//  let compose (F:Functor<'F>) (G:Functor<'G>) : Functor<App<'F, 'G>> =
+//    { new Functor<_>() with
+//        member __.Map<'A, 'B> (f:'A -> 'B) (fga:App<App<'F, 'G>, 'A>) : App<App<'F, 'G>, 'B> =
+//          F.Map (G.Map f) (Compose.Curry fga) |> Compose.Uncurry }
+
+  let compose (F:Functor<'F>) (G:Functor<'G>) : Functor<App2<Compose, 'F, 'G>> =
+    { new Functor<_>() with
+        member __.Map<'A, 'B> (f:'A -> 'B) (fga:App<App2<Compose, 'F, 'G>, 'A>) : App<App2<Compose, 'F, 'G>, 'B> =
+          F.Map (G.Map f) (Compose.Prj fga) |> Compose.Inj }
+        
 module FunctorLaws =
   
   let identity (eq : App<'F, 'A> -> App<'F, 'A> -> bool) (func : Functor<'F>) (fa : App<'F, 'A>) =

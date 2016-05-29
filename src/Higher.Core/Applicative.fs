@@ -9,16 +9,15 @@ type Applicative<'F>() =
     abstract Pure<'T> : 'T -> App<'F, 'T>
     abstract Apply<'T, 'R> : App<'F, 'T -> 'R> -> App<'F, 'T> -> App<'F, 'R>
 
-type Compose<'f, 'g, 'a> = App<'f, App<'g, 'a>>
-
 module Applicative =
   
-  // f (g a)
-  let compose (F:Applicative<'F>) (G:Applicative<'G>) : Applicative<App<'F, 'G>> =    
-    { new Applicative<App<'F, 'G>>() with
-        member x.Pure<'T> (a:'T) = 
-          //let ga = G.Pure a in
-          //let a = F.Pure (G.Pure a)
-          let x = failwith "" in x
-        member x.Apply (f) (a) = failwith "" }
+  let compose (F:Applicative<'F>) (G:Applicative<'G>) : Applicative<Compose<'F, 'G>> =    
+    { new Applicative<_>() with
+        member x.Pure<'A> (a:'A) : Compose<'F, 'G, 'A> = 
+          let a = F.Pure (G.Pure a)
+          Compose.Inj a
+        member x.Apply (f:Compose<'F, 'G, 'A -> 'B>) (fa:Compose<'F, 'G, 'A>) : Compose<'F, 'G, 'B> = 
+          let f' = Compose.Prj f
+          let fa' = Compose.Prj fa
+          F.Apply (F.Map (G.Apply) f') fa' |> Compose.Inj }
             

@@ -9,6 +9,13 @@ type Comonad<'W>() =
     abstract Extract<'A> : App<'W, 'A> -> 'A
     abstract Extend<'A, 'B> : (App<'W, 'A> -> 'B) -> App<'W, 'A> -> App<'W, 'B>
 
+type IdentityComonad() =
+  inherit Comonad<Identity>() with
+    override self.Extract (app : App<Identity, 'A>) : 'A =
+      app |> Identity.Prj |> Identity.un
+    override self.Extend (f : App<Identity, 'A> -> 'B) (app : App<Identity, 'A>) : App<Identity, 'B> =
+      app |> f |> Id |> Identity.Inj
+
 // Generic comonad functions.
 module Comonad =
   
