@@ -29,15 +29,10 @@ type ProFunctor<'F>() =
 
 module Functor =
   
-//  let compose (F:Functor<'F>) (G:Functor<'G>) : Functor<App<'F, 'G>> =
-//    { new Functor<_>() with
-//        member __.Map<'A, 'B> (f:'A -> 'B) (fga:App<App<'F, 'G>, 'A>) : App<App<'F, 'G>, 'B> =
-//          F.Map (G.Map f) (Compose.Curry fga) |> Compose.Uncurry }
-
-  let compose (F:Functor<'F>) (G:Functor<'G>) : Functor<App2<Compose, 'F, 'G>> =
+  let compose (F:Functor<'F>) (G:Functor<'G>) : Functor<Comp<'F, 'G>> =
     { new Functor<_>() with
-        member __.Map<'A, 'B> (f:'A -> 'B) (fga:App<App2<Compose, 'F, 'G>, 'A>) : App<App2<Compose, 'F, 'G>, 'B> =
-          F.Map (G.Map f) (Compose.Prj fga) |> Compose.Inj }
+        member __.Map<'A, 'B> (f:'A -> 'B) (fga:App<Comp<'F, 'G>, 'A>) : App<Comp<'F, 'G>, 'B> =
+          F.Map (G.Map f) (Comp.Prj fga) |> Comp.Inj }
         
 module FunctorLaws =
   
@@ -55,3 +50,21 @@ module ProFunctorLaws =
     eq (func.DiMap id id fab) fab  
 
    
+
+
+
+module NatComp =
+  
+  /// Witnesses that natural transformations can be composed vertically.
+  let vert (F2:Functor<'F2>) : Nat<'F2, 'G2> -> Nat<'F, 'G> -> NatComp<'F, 'F2, 'G, 'G2> =
+    fun (a:Nat<'F2, 'G2>) (b:Nat<'F, 'G>) ->
+      { new NatComp<_,_,_,_> with
+          member __.NatComp (x:App<Comp<'F2, 'F>, 'A>) : App<Comp<'G2, 'G>, 'A> =
+            a.Nat (F2.Map b.Nat (Comp.Prj x)) |> Comp.Inj }
+
+  /// Witnesses that natural transformations can be composed horizontally.
+  let horiz (G2:Functor<'G2>) : Nat<'F2, 'G2> -> Nat<'F, 'G> -> NatComp<'F, 'F2, 'G, 'G2> =
+    fun (a:Nat<'F2, 'G2>) (b:Nat<'F, 'G>) ->
+      { new NatComp<_,_,_,_> with
+          member __.NatComp (x:App<Comp<'F2, 'F>, 'A>) : App<Comp<'G2, 'G>, 'A> =
+            G2.Map b.Nat (a.Nat (Comp.Prj x)) |> Comp.Inj }

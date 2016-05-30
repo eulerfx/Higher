@@ -2,11 +2,38 @@
 
 open Higher.Core
 
+
+
 type Ran<'G, 'H, 'A> =
   abstract member Apply<'B> : ('A -> App<'G, 'B>) -> App<'H, 'B>
 
+type Codensity<'M, 'A> = Ran<'M, 'M, 'A>
+
+type Ran = Ran
+  with
+    static member Prj (app3:App3<Ran, 'G, 'H, 'A>) : Ran<'G, 'H, 'A> = 
+      failwith ""  
+    static member Inj (value:Ran<'G, 'H, 'A>) : App3<Ran, 'G, 'H, 'A> = 
+      failwith ""
+
 type Lan<'G, 'H, 'A> =
   abstract member Apply<'B> : (App<'G, 'B> -> 'A) -> App<'H, 'B> -> Lan<'G, 'H, 'A>
+
+type DiNat<'F, 'G> =
+  abstract member Apply<'A> : App2<'F, 'A, 'A> -> App2<'G, 'A, 'A>
+
+type End<'S> =
+  abstract member Apply<'A> : unit -> App2<'S, 'A, 'A>
+
+module Kan =
+  
+  let ranFunctor<'G, 'H> : Functor<App2<Ran, 'G, 'H>> =
+    { new Functor<_>() with
+        member __.Map<'A, 'B> (f:'A -> 'B) (r:App3<Ran, 'G, 'H, 'A>) : App3<Ran, 'G, 'H, 'B> =
+          { new Ran<'G, 'H, 'B> with
+              member __.Apply<'C> (k:'B -> App<'G, 'C>) : App<'H, 'C> =
+                let x : Ran<'G, 'H, 'A> = Ran.Prj r
+                x.Apply (f >> k) } |> Ran.Inj }
 
 
 [<AbstractClass>]
@@ -15,22 +42,30 @@ type Distributive<'G>() =
   abstract Distribute<'F, 'A> : Functor<'F> -> App<'F, App<'G, 'A>> -> App<'G, App<'F, 'A>>
   abstract Collect<'F, 'A, 'B> : Functor<'F> -> ('A -> App<'G, 'B>) -> App<'F, 'A> -> App<'G, App<'F, 'B>>
 
-
 [<AbstractClass>]
-type Rep<'F>() =
-  inherit Distributive<'F>()
-  abstract member Tabulate : (Rep<'F> -> 'A) -> App<'F, 'A>
-  abstract member Index : App<'F, 'A> -> Rep<'F> -> 'A
+type Adjunction<'F, 'G> =
+  abstract member Unit<'A> : 'A -> App<'G, App<'F, 'A>>
+  abstract member CoUnit<'A> : App<'F, App<'G, 'A>> -> 'A
+  member self.LeftAdjunct<'A, 'B> (G:Functor<'G>) (f:(App<'F, 'A> -> 'B)) : ('A -> App<'G, 'B>) =
+    self.Unit >> G.Map f                 
+  member self.RightAdjunct<'A, 'B> (F:Functor<'F>) (f:('A -> App<'G, 'B>)) : App<'F, 'A> -> 'B =
+    F.Map f >> self.CoUnit
+    
+module Adjunction = 
 
+  let monad (adj:Adjunction<'G, 'F>) (F:Functor<'F>) (G:Functor<'G>) : Monad<Comp<'F, 'G>> =
+    { new Monad<_>() with
+        member __.Return<'A> (a:'A) : App<Comp<'F, 'G>, 'A> =
+          adj.Unit a |> Comp.Inj
+        member __.Bind<'A, 'B> (a:App<Comp<'F, 'G>, 'A>, f:'A -> App<Comp<'F, 'G>, 'B>) : App<Comp<'F, 'G>, 'B> =
+          F.Map (adj.RightAdjunct G (f >> Comp.Prj)) (Comp.Prj a) |> Comp.Inj }
 
-type Adjunction<'F, 'U> =
-
-  abstract member Unit<'A> : 'A -> App<'U, App<'F, 'A>>
-  abstract member CoUnit<'A> : App<'F, App<'U, 'A>> -> 'A
-
-  abstract member LeftAdjunct<'A, 'B> : (App<'F, 'A> -> 'B) -> 'A -> App<'U, 'B>
-  abstract member RightAdjunct<'A, 'B> : ('A -> App<'U, 'B>) -> App<'F, 'A> -> 'B
-
+  let comonad (adj:Adjunction<'F, 'G>) (F:Functor<'F>) (G:Functor<'G>) : Comonad<Comp<'F, 'G>> =
+    { new Comonad<_>() with
+        member __.Extract<'A> (w:App<Comp<'F, 'G>, 'A>) : 'A =
+          adj.CoUnit (Comp.Prj w)
+        member __.Extend<'A, 'B> (f:App<Comp<'F, 'G>, 'A> -> 'B) (w:App<Comp<'F, 'G>, 'A>) : App<Comp<'F, 'G>, 'B> =
+          F.Map (adj.LeftAdjunct G (Comp.Inj >> f)) (Comp.Prj w) |> Comp.Inj }
 
 
 type Lens = Lens
@@ -93,3 +128,16 @@ module Lens =
 
 
 
+/// Backtracking.
+type BT<'A> =
+  abstract member Apply<'Z> : ('A -> 'Z -> 'Z) -> 'Z -> 'Z
+
+module BT =
+  
+  let fail<'A> : BT<'A> =
+    { new BT<_> with
+        member __.Apply s f = f }
+
+  let join (a:BT<'A>) (b:BT<'A>) : BT<'A> =
+    { new BT<_> with
+        member __.Apply s f = a.Apply s (b.Apply s f) }

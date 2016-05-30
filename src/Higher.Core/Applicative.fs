@@ -11,13 +11,13 @@ type Applicative<'F>() =
 
 module Applicative =
   
-  let compose (F:Applicative<'F>) (G:Applicative<'G>) : Applicative<Compose<'F, 'G>> =    
+  let compose (F:Applicative<'F>) (G:Applicative<'G>) : Applicative<Comp<'F, 'G>> =    
     { new Applicative<_>() with
-        member x.Pure<'A> (a:'A) : Compose<'F, 'G, 'A> = 
+        member x.Pure<'A> (a:'A) : App<Comp<'F, 'G>, 'A> = 
           let a = F.Pure (G.Pure a)
-          Compose.Inj a
-        member x.Apply (f:Compose<'F, 'G, 'A -> 'B>) (fa:Compose<'F, 'G, 'A>) : Compose<'F, 'G, 'B> = 
-          let f' = Compose.Prj f
-          let fa' = Compose.Prj fa
-          F.Apply (F.Map (G.Apply) f') fa' |> Compose.Inj }
+          Comp.Inj a
+        member x.Apply (f:App<Comp<'F, 'G>, 'A -> 'B>) (fa:App<Comp<'F, 'G>, 'A>) : App<Comp<'F, 'G>, 'B> = 
+          let f' = Comp.Prj f
+          let fa' = Comp.Prj fa
+          F.Apply (F.Map (G.Apply) f') fa' |> Comp.Inj }
             

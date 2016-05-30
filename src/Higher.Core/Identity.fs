@@ -22,3 +22,12 @@ type IdentityApplicative() =
     override self.Apply (fab : App<Identity, 'A -> 'B>) (a : App<Identity, 'A>) : App<Identity, 'B> =
       let f = fab |> Identity.Prj |> Identity.un in
       f (Identity.Prj a |> Identity.un) |> Id |> Identity.Inj
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module Identity =
+  
+  let unId (F:Functor<'F>) (fc:App<Comp<'F, Identity>, 'A>) : App<'F, 'A> =            
+    F.Map (Identity.Prj >> Identity.un) (Comp.Prj fc)
+  
+  let toId (F:Functor<'F>) (fa:App<'F, 'A>) : App<Comp<'F, Identity>, 'A> =
+    F.Map (Identity.Id >> Identity.Inj) fa |> Comp.Inj
