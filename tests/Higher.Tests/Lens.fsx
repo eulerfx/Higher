@@ -2,6 +2,21 @@
 
 open Higher.Core
 
+/// A polymorphic function.
+type Nat<'F, 'G> = 
+  abstract member Apply<'A> : App<'F, 'A> -> App<'G, 'A>
+
+
+type HeadOption () =
+  interface Nat<List, Option> with
+    override __.Apply<'A> (ls:App<List, 'A>) : App<Option, 'A> =
+      ls |> List.Prj |> List.tryHead |> Option.Inj
+
+
+type IdNat () =
+  interface Nat<Identity, Identity> with
+    override __.Apply<'A> (x:App<Identity, 'A>) : App<Identity, 'A> =
+      x |> Identity.Prj |> Identity.un |> Identity.Id |> Identity.Inj
 
 
 type Ran<'G, 'H, 'A> =
